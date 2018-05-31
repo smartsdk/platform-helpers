@@ -370,6 +370,11 @@ do_install() {
 				fi
 				$sh_c 'apt-get update'
 				$sh_c "apt-get install -y -q docker-ce=$(apt-cache madison docker-ce | grep ${docker_version} | head -n 1 | cut -d ' ' -f 4)"
+                                $sh_c "cp -f /lib/systemd/system/docker.service /etc/systemd/system/docker.service"
+                                $sh_c "sed /etc/systemd/system/docker.service -e 's|ExecStart=/usr/bin/dockerd -H fd://|ExecStart=/usr/bin/dockerd -H fd:// --mtu=1400|'"
+                                $sh_c "systemctl daemon-reload"
+                                $sh_c "service docker restart"
+                                $sh_c "sysctl -w vm.max_map_count=262144"
 			)
 			echo_docker_as_nonroot
 			exit 0
