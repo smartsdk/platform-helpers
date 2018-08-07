@@ -374,7 +374,8 @@ do_install() {
                                 $sh_c "sed /etc/systemd/system/docker.service -e 's|ExecStart=/usr/bin/dockerd -H fd://|ExecStart=/usr/bin/dockerd -H fd:// --mtu=1400|'"
                                 $sh_c "systemctl daemon-reload"
                                 $sh_c "service docker restart"
-                                $sh_c "sysctl -w vm.max_map_count=262144"
+                                $sh_c "printf 'vm.max_map_count=262144\n' | tee /etc/sysctl.d/99-custom-fiware.conf"
+                                $sh_c "sysctl --system"
 			)
 			echo_docker_as_nonroot
 			exit 0
