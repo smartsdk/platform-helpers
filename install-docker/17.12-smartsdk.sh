@@ -377,13 +377,14 @@ do_install() {
                                 $sh_c "systemctl daemon-reload"
                                 $sh_c "systemctl restart docker.service"
 
-                                $sh_c "ip link list | grep -q docker_gwbridge && docker network disconnect --force docker_gwbridge gateway_ingress-sbox && docker network rm docker_gwbridge"
-                                $sh_c "ip link list | grep -q docker_gwbridge && ip link set docker_gwbridge down && brctl delbr docker_gwbridge"
+                                $sh_c "docker network list | grep -q docker_gwbridge && docker network inspect docker_gwbridge | grep -q gateway_ingress-sbox && docker network disconnect --force docker_gwbridge gateway_ingress-sbox" || true
+                                $sh_c "docker network list | grep -q docker_gwbridge && docker network rm docker_gwbridge" || true
+                                $sh_c "ip link list | grep -q docker_gwbridge && ip link set docker_gwbridge down && brctl delbr docker_gwbridge" || true
 
                                 # Partial inspiration from
                                 # https://github.com/moby/moby/issues/37018#issuecomment-388475766
 
-                                $sh_c "docker network create --opt com.docker.network.driver.mtu=1400 docker_gwbridge --opt com.docker.network.bridge.enable_icc=false --opt com.docker.network.bridge.enable_ip_masquerade=true --opt com.docker.network.bridge.name=docker_gwbridge"
+                                $sh_c "docker network create --opt com.docker.network.driver.mtu=1400 docker_gwbridge --opt com.docker.network.bridge.enable_icc=false --opt com.docker.network.bridge.enable_ip_masquerade=true --opt com.docker.network.bridge.name=docker_gwbridge" || true
                                 $sh_c "ip link set docker_gwbridge mtu 1400"
                                 $sh_c "printf 'vm.max_map_count=262144\n' | tee /etc/sysctl.d/99-custom-fiware.conf"
                                 $sh_c "sysctl --system"
