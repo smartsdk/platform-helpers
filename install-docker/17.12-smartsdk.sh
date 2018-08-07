@@ -370,10 +370,21 @@ do_install() {
 				fi
 				$sh_c 'apt update'
 				$sh_c "apt install -y -q docker-ce=$(apt-cache madison docker-ce | grep ${docker_version} | head -n 1 | cut -d ' ' -f 4)"
+                                $sh_c "apt install bridge-utils"
                                 $sh_c "cp -f /lib/systemd/system/docker.service /etc/systemd/system/docker.service"
                                 $sh_c "sed /etc/systemd/system/docker.service -e 's|ExecStart=/usr/bin/dockerd -H fd://|ExecStart=/usr/bin/dockerd -H fd:// --mtu=1400|'"
+
                                 $sh_c "systemctl daemon-reload"
-                                $sh_c "service docker restart"
+                                $sh_c "systemctl restart docker.service"
+
+                                $sh_c "ip link list | grep -q docker_gwbridge && docker network disconnect --force docker_gwbridge gateway_ingress-sbox && docker network rm docker_gwbridge"
+                                $sh_c "ip link list | grep -q docker_gwbridge && ip link set docker_gwbridge down && brctl delbr docker_gwbridge"
+
+                                # Partial inspiration from
+                                # https://github.com/moby/moby/issues/37018#issuecomment-388475766
+
+                                $sh_c "docker network create --opt com.docker.network.driver.mtu=1400 docker_gwbridge --opt com.docker.network.bridge.enable_icc=false --opt com.docker.network.bridge.enable_ip_masquerade=true --opt com.docker.network.bridge.name=docker_gwbridge"
+                                $sh_c "ip link set docker_gwbridge mtu 1400"
                                 $sh_c "printf 'vm.max_map_count=262144\n' | tee /etc/sysctl.d/99-custom-fiware.conf"
                                 $sh_c "sysctl --system"
 			)
